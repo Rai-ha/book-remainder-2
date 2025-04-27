@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Book Reminder - Obsidian Style</title>
+  
+  <!-- FullCalendar -->
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+  <!-- vis.js for Graph View -->
+  <script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #1f1f1f;
+      color: #d1d1d1;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .top-right-banner {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 2000;
+    }
+
+    .top-right-banner img {
+      width: 100px;
+      height: auto;
+      border-radius: 8px;
+      opacity: 0.9;
+    }
+
+    .sidebar {
+      width: 240px;
+      background-color: #252526;
+      border-right: 1px solid #2d2d2d;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .sidebar h2 {
+      font-size: 16px;
+      margin-bottom: 15px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .add-book-form input, .add-book-form textarea, .add-book-form button, #viewAllBooksBtn {
+      display: block;
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      background-color: #2d2d2d;
+      color: #d1d1d1;
+      font-size: 14px;
+    }
+
+    .add-book-form textarea {
+      resize: vertical;
+    }
+
+    .add-book-form button:hover, #viewAllBooksBtn:hover, #toggleGraphView:hover {
+      background-color: #ff79c6;
+      color: #1f1f1f;
+    }
+
+    .book-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .book-list li {
+      padding: 8px 10px;
+      background-color: #2d2d2d;
+      margin-bottom: 5px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 14px;
+      font-family: 'Source Code Pro', monospace;
+    }
+
+    .book-list li:hover {
+      background-color: #3a3a3a;
+    }
+
+    .book-list li::before {
+      content: '•';
+      color: #ff79c6;
+      margin-right: 8px;
+    }
+
+    .book-list li button {
+      background-color: #d93025;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .main {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    #calendar {
+      background-color: #252526;
+      border-radius: 8px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background-color: #252526;
+      border-radius: 8px;
+      padding: 20px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .close {
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .close:hover {
+      color: #ff79c6;
+    }
+
+    #connectionSearch {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      background-color: #2d2d2d;
+      color: #d1d1d1;
+      font-size: 14px;
+    }
+
+    #connections {
+      background-color: #2d2d2d;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+
+    #graphView {
+      width: 100%;
+      height: 400px;
+      background-color: #2d2d2d;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+
+    #toggleGraphView {
+      padding: 8px;
+      border: 1px solid #3a3a3a;
+      border-radius: 4px;
+      background-color: #2d2d2d;
+      color: #d1d1d1;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid #3a3a3a;
+      text-align: left;
+    }
+
+    th {
+      background-color: #2d2d2d;
+    }
+
+    .notes-preview {
+      max-height: 50px;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .notes-preview:hover {
+      color: #ff79c6;
+    }
+
+    td button {
+      background-color: #d93025;
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    td button.generate-summary {
+      background-color: #1e90ff;
+      margin-right: 5px;
+    }
+
+    .highlight {
+      background-color: #ff79c6 !important;
+      color: #1f1f1f;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+      }
+      .top-right-banner img {
+        width: 80px;
+      }
+      #graphView {
+        height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Right Banner -->
+  <div class="top-right-banner">
+    <img src="ketab-banner.png" alt="Ketab Banner" />
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <h2>Add Book</h2>
+    <form class="add-book-form" id="bookForm">
+      <input type="text" id="title" placeholder="Book Title" required>
+      <input type="date" id="dueDate" required>
+      <textarea id="notes" placeholder="Notes about the book" rows="4"></textarea>
+      <input type="text" id="tags" placeholder="Tags (comma-separated, e.g., productivity, self-help)">
+      <button type="submit">Add Book</button>
+    </form>
+
+    <h2>Upcoming Books</h2>
+    <button id="viewAllBooksBtn">View All Books</button>
+    <ul class="book-list" id="bookList"></ul>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div id="calendar"></div>
+  </div>
+
+  <!-- Modal -->
+  <div id="bookModal" class="modal" style="display: none;" role="dialog" aria-labelledby="modalTitle">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">All Books</h2>
+        <span id="closeModal" class="close" role="button" aria-label="Close modal">×</span>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="connectionSearch" placeholder="Search by keyword or tag">
+        <div class="sort-buttons">
+          <button id="sortByTitle">Sort by Title</button>
+          <button id="sortByDueDate">Sort by Due Date</button>
+          <button id="toggleGraphView">Toggle Graph View</button>
+        </div>
+        <div id="connections"></div>
+        <div id="graphView" style="display: none;"></div>
+        <table id="bookTable">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Due Date</th>
+              <th>Notes</th>
+              <th>Tags</th>
+              <th>Summary</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="bookTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script>
+    if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+      Notification.requestPermission();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const calendarEl = document.getElementById('calendar');
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay',
+        },
+        events: loadBooks().map(book => ({
+          id: book.id,
+          title: book.title,
+          start: book.due_date,
+          allDay: true
+        })),
+        eventClick: function (info) {
+          if (confirm(`Delete "${info.event.title}"?`)) {
+            const books = loadBooks();
+            const index = books.findIndex(b => b.id === info.event.id);
+            if (index !== -1) {
+              books.splice(index, 1);
+              saveBooks(books);
+              info.event.remove();
+              loadBookList();
+              updateBookTable();
+              renderGraph();
+            }
+          }
+        }
+      });
+      calendar.render();
+
+      function loadBooks() {
+        try {
+          return JSON.parse(localStorage.getItem('books')) || [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveBooks(books) {
+        localStorage.setItem('books', JSON.stringify(books));
+      }
+
+      function escapeHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+      }
+
+      // Mock AI summary generator (replace with real API call)
+      function generateAISummary(title) {
+        return `Summary of "${title}": This is a placeholder summary for the book. It covers key themes and insights. (Generated by AI)`;
+      }
+
+      function findConnections(searchTerm) {
+        const books = loadBooks();
+        const term = searchTerm.toLowerCase().trim();
+        if (!term) return [];
+        return books.filter(book => {
+          const notes = (book.notes || '').toLowerCase();
+          const tags = (book.tags || []).map(t => t.toLowerCase());
+          return notes.includes(term) || tags.includes(term);
+        });
+      }
+
+      function renderGraph() {
+        const books = loadBooks();
+        const nodes = books.map(book => ({
+          id: book.id,
+          label: book.title,
+          title: book.title,
+          color: { background: '#ff79c6', border: '#d1d1d1' },
+          font: { color: '#d1d1d1' }
+        }));
+
+        const edges = [];
+        for (let i = 0; i < books.length; i++) {
+          for (let j = i + 1; j < books.length; j++) {
+            const sharedTags = books[i].tags?.filter(tag => books[j].tags?.includes(tag)) || [];
+            if (sharedTags.length > 0) {
+              edges.push({
+                from: books[i].id,
+                to: books[j].id,
+                label: sharedTags.join(', '),
+                color: '#d1d1d1',
+                font: { color: '#d1d1d1' }
+              });
+            }
+          }
+        }
+
+        const container = document.getElementById('graphView');
+        const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+        const options = {
+          nodes: { shape: 'dot', size: 20 },
+          edges: { smooth: { type: 'continuous' } },
+          physics: { stabilization: false, barnesHut: { gravitationalConstant: -2000 } },
+          interaction: { hover: true, zoomView: true },
+          layout: { randomSeed: 42 }
+        };
+        const network = new vis.Network(container, data, options);
+
+        network.on('click', (params) => {
+          if (params.nodes.length > 0) {
+            const bookId = params.nodes[0];
+            const rows = document.querySelectorAll('#bookTableBody tr');
+            rows.forEach(row => row.classList.remove('highlight'));
+            const row = document.querySelector(`#bookTableBody tr[data-id="${bookId}"]`);
+            if (row) {
+              row.classList.add('highlight');
+              row.scrollIntoView({ behavior: 'smooth' });
+            }
+          }
+        });
+      }
+
+      function loadBookList() {
+        const bookList = document.getElementById('bookList');
+        const books = loadBooks();
+        bookList.innerHTML = '';
+        books.forEach((book) => {
+          const li = document.createElement('li');
+          const notesPreview = book.notes ? escapeHtml(book.notes.slice(0, 50)) + (book.notes.length > 50 ? '...' : '') : 'No notes';
+          li.innerHTML = `${escapeHtml(book.title)}<br>Due: ${new Date(book.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}<br>Notes: ${notesPreview}`;
+          const btn = document.createElement('button');
+          btn.textContent = 'Delete';
+          btn.onclick = () => {
+            const index = books.findIndex(b => b.id === book.id);
+            books.splice(index, 1);
+            saveBooks(books);
+            loadBookList();
+            updateBookTable();
+            renderGraph();
+            calendar.getEventById(book.id)?.remove();
+          };
+          li.appendChild(btn);
+          bookList.appendChild(li);
+        });
+      }
+
+      function updateBookTable(sortBy = null) {
+        const tableBody = document.getElementById('bookTableBody');
+        let books = loadBooks();
+        if (sortBy) {
+          books.sort((a, b) => a[sortBy].localeCompare(b[sortBy]));
+        }
+        tableBody.innerHTML = '';
+        books.forEach((book) => {
+          const notesPreview = book.notes ? escapeHtml(book.notes.slice(0, 50)) + (book.notes.length > 50 ? '...' : '') : 'No notes';
+          const tags = (book.tags || []).join(', ') || 'None';
+          const summary = book.summary ? escapeHtml(book.summary.slice(0, 50)) + (book.summary.length > 50 ? '...' : '') : 'Not generated';
+          const row = document.createElement('tr');
+          row.setAttribute('data-id', book.id);
+          row.innerHTML = `
+            <td>${escapeHtml(book.title)}</td>
+            <td>${new Date(book.due_date).toISOString().split('T')[0]}</td>
+            <td class="notes-preview"><a href="notes.html?id=${book.id}" target="_blank">${notesPreview}</a></td>
+            <td>${escapeHtml(tags)}</td>
+            <td>${summary} <button class="generate-summary" onclick="generateSummary('${book.id}')">Generate</button></td>
+            <td><button onclick="deleteFromTable('${book.id}')">Delete</button></td>
+          `;
+          tableBody.appendChild(row);
+        });
+      }
+
+      function deleteFromTable(id) {
+        const books = loadBooks();
+        const index = books.findIndex(b => b.id === id);
+        if (index !== -1) {
+          const [removed] = books.splice(index, 1);
+          saveBooks(books);
+          loadBookList();
+          updateBookTable();
+          renderGraph();
+          calendar.getEventById(id)?.remove();
+        }
+      }
+
+      function generateSummary(id) {
+        const books = loadBooks();
+        const book = books.find(b => b.id === id);
+        if (book) {
+          book.summary = generateAISummary(book.title);
+          saveBooks(books);
+          updateBookTable();
+        }
+      }
+
+      document.getElementById('bookForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const title = document.getElementById('title').value.trim();
+        const dueDate = document.getElementById('dueDate').value;
+        const notes = document.getElementById('notes').value.trim();
+        const tags = document.getElementById('tags').value.split(',').map(t => t.trim()).filter(t => t);
+        if (!title || !dueDate) return alert('Please fill title and due date.');
+        if (new Date(dueDate) < new Date().setHours(0, 0, 0, 0)) {
+          return alert('Due date cannot be in the past.');
+        }
+        const books = loadBooks();
+        if (books.find(b => b.title === title)) return alert('Book already exists!');
+        const book = { id: generateId(), title, due_date: dueDate, notes, tags, summary: '' };
+        books.push(book);
+        saveBooks(books);
+        calendar.addEvent({ id: book.id, title, start: dueDate, allDay: true });
+        document.getElementById('bookForm').reset();
+        loadBookList();
+        updateBookTable();
+        renderGraph();
+        // Open notes page for the new book
+        window.open(`notes.html?id=${book.id}`, '_blank');
+      });
+
+      document.getElementById('viewAllBooksBtn').onclick = () => {
+        document.getElementById('bookModal').style.display = 'flex';
+        updateBookTable();
+        renderGraph();
+      };
+
+      document.getElementById('closeModal').onclick = () => {
+        document.getElementById('bookModal').style.display = 'none';
+      };
+
+      window.onclick = (e) => {
+        if (e.target === document.getElementById('bookModal')) {
+          document.getElementById('bookModal').style.display = 'none';
+        }
+      };
+
+      document.getElementById('sortByTitle').onclick = () => updateBookTable('title');
+      document.getElementById('sortByDueDate').onclick = () => updateBookTable('due_date');
+
+      document.getElementById('connectionSearch').addEventListener('input', function () {
+        const searchTerm = this.value;
+        const connections = findConnections(searchTerm);
+        const connectionsDiv = document.getElementById('connections');
+        if (!searchTerm || connections.length === 0) {
+          connectionsDiv.innerHTML = '';
+          return;
+        }
+        connectionsDiv.innerHTML = `<strong>Connected Books:</strong> ${connections.map(b => escapeHtml(b.title)).join(', ')}`;
+      });
+
+      document.getElementById('toggleGraphView').onclick = () => {
+        const graphView = document.getElementById('graphView');
+        const bookTable = document.getElementById('bookTable');
+        if (graphView.style.display === 'none') {
+          graphView.style.display = 'block';
+          bookTable.style.display = 'none';
+          renderGraph();
+        } else {
+          graphView.style.display = 'none';
+          bookTable.style.display = 'table';
+        }
+      };
+
+      loadBookList();
+    });
+  </script>
+</body>
+</html>
