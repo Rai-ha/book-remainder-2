@@ -1,0 +1,34 @@
+[
+  {
+    "id": "1",
+    "title": "Atomic Habits",
+    "due_date": "2025-05-01",
+    "notes": "A great book about building good habits and breaking bad ones.",
+    "tags": ["self-help", "productivity", "habits"],
+    "summary": "This book discusses how small changes can lead to remarkable results."
+  },
+  {
+    "id": "2",
+    "title": "Deep Work",
+    "due_date": "2025-05-10",
+    "notes": "Focus on creating value through deep and focused work.",
+    "tags": ["productivity", "focus"],
+    "summary": "The book explores strategies to achieve deep, focused work and minimize distractions."
+  },
+  {
+    "id": "3",
+    "title": "The Alchemist",
+    "due_date": "2025-06-01",
+    "notes": "A story about pursuing one's dreams and listening to the heart.",
+    "tags": ["fiction", "philosophy", "inspiration"],
+    "summary": "A shepherd's journey to find treasure teaches life lessons."
+  },
+  {
+    "id": "4",
+    "title": "Sapiens: A Brief History of Humankind",
+    "due_date": "2025-07-15",
+    "notes": "History and evolution of humankind in an engaging narrative.",
+    "tags": ["history", "science", "humanity"],
+    "summary": "The book covers how humans evolved and shaped the world."
+  }
+]
